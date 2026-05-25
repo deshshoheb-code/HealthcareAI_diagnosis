@@ -65,8 +65,8 @@ app = FastAPI(
 )
 
 @app.get("/")
-async def serve_frontend():
-    return FileResponse("index.html")
+async def root():
+    return {"message": "Clinical AI Platform API", "status": "ok"}
 
 app.add_middleware(
     CORSMiddleware,
