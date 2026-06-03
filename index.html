@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ClinAI — Clinical Decision Support</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0c0f;
+  --surface:#111318;
+  --surface2:#181b22;
+  --border:#1f2330;
+  --border2:#2a2f40;
+  --text:#e8eaf0;
+  --text2:#8a8fa8;
+  --text3:#555a70;
+  --accent:#4af0a8;
+  --accent2:#2dd4a0;
+  --accent-dim:#0d2e22;
+  --warn:#f0c04a;
+  --warn-dim:#2e2610;
+  --danger:#f05a4a;
+  --danger-dim:#2e1410;
+  --info:#4a8af0;
+  --info-dim:#0d1d2e;
+  --radius:10px;
+  --radius-lg:16px;
+  --shadow:0 4px 24px rgba(0,0,0,0.5);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.6}
+h1,h2,h3{font-family:'DM Serif Display',serif;font-weight:400}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ─── LAYOUT ─── */
+#app{display:flex;flex-direction:column;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.topbar-logo{font-family:'DM Serif Display',serif;font-size:22px;color:var(--accent);letter-spacing:-.5px}
+.topbar-logo span{color:var(--text2);font-size:13px;font-family:'DM Sans',sans-serif;margin-left:8px}
+.topbar-nav{display:flex;gap:4px}
+.topbar-nav button{background:none;border:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 14px;border-radius:6px;cursor:pointer;transition:.15s}
+.topbar-nav button:hover{background:var(--surface2);color:var(--text)}
+.topbar-nav button.active{background:var(--accent-dim);color:var(--accent)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.doctor-badge{font-size:12px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);padding:4px 12px;border-radius:20px}
+.btn-logout{background:none;border:1px solid var(--border);color:var(--text3);font-size:12px;font-family:'DM Sans',sans-serif;padding:4px 12px;border-radius:6px;cursor:pointer;transition:.15s}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger)}
+.main-content{flex:1;padding:32px 28px;max-width:1200px;width:100%;margin:0 auto}
+
+/* ─── AUTH ─── */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:48px;width:400px;box-shadow:var(--shadow)}
+.auth-logo{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);text-align:center;margin-bottom:4px}
+.auth-sub{text-align:center;color:var(--text2);font-size:13px;margin-bottom:32px}
+.auth-tabs{display:flex;gap:4px;background:var(--surface2);border-radius:8px;padding:4px;margin-bottom:24px}
+.auth-tab{flex:1;background:none;border:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;padding:7px;border-radius:6px;cursor:pointer;transition:.15s}
+.auth-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.4)}
+
+/* ─── FORM ─── */
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-group input,
+.form-group textarea,
+.form-group select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:10px 14px;border-radius:var(--radius);outline:none;transition:.15s;resize:vertical}
+.form-group input:focus,
+.form-group textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(74,240,168,.08)}
+.form-group textarea{min-height:120px;line-height:1.7}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border-radius:var(--radius);border:none;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#0a0c0f}
+.btn-primary:hover{background:var(--accent2)}
+.btn-primary:disabled{background:var(--border2);color:var(--text3);cursor:not-allowed}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--border2);background:var(--border)}
+.btn-danger{background:var(--danger-dim);color:var(--danger);border:1px solid rgba(240,90,74,.2)}
+.btn-danger:hover{background:rgba(240,90,74,.2)}
+.btn-warn{background:var(--warn-dim);color:var(--warn);border:1px solid rgba(240,192,74,.2)}
+.btn-warn:hover{background:rgba(240,192,74,.2)}
+.btn-full{width:100%}
+.btn-sm{padding:6px 14px;font-size:13px}
+
+/* ─── ALERTS ─── */
+.alert{padding:12px 16px;border-radius:var(--radius);font-size:13px;margin-bottom:16px;border-left:3px solid}
+.alert-error{background:var(--danger-dim);border-color:var(--danger);color:var(--danger)}
+.alert-success{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.alert-warn{background:var(--warn-dim);border-color:var(--warn);color:var(--warn)}
+.alert-info{background:var(--info-dim);border-color:var(--info);color:var(--info)}
+
+/* ─── CARDS ─── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.card-title{font-size:18px;color:var(--text)}
+
+/* ─── PAGE HEADER ─── */
+.page-header{margin-bottom:28px}
+.page-header h2{font-size:26px;color:var(--text);margin-bottom:4px}
+.page-header p{color:var(--text2);font-size:14px}
+
+/* ─── TABLE ─── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface2)}
+th{padding:12px 16px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text2)}
+td{padding:12px 16px;border-top:1px solid var(--border);font-size:13px}
+tr:hover td{background:rgba(255,255,255,.02)}
+.clickable-row{cursor:pointer}
+
+/* ─── BADGES ─── */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.badge-green{background:var(--accent-dim);color:var(--accent)}
+.badge-yellow{background:var(--warn-dim);color:var(--warn)}
+.badge-red{background:var(--danger-dim);color:var(--danger)}
+.badge-blue{background:var(--info-dim);color:var(--info)}
+.badge-gray{background:var(--surface2);color:var(--text2)}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* ─── STATS ROW ─── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:6px}
+.stat-value{font-size:28px;font-family:'DM Serif Display',serif;color:var(--text)}
+.stat-sub{font-size:12px;color:var(--text3);margin-top:2px}
+
+/* ─── PIPELINE ─── */
+.pipeline-layout{display:grid;grid-template-columns:260px 1fr;gap:24px;align-items:start}
+.pipeline-steps{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.pipeline-step{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);cursor:default}
+.pipeline-step:last-child{border-bottom:none}
+.step-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.step-num.done{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent)}
+.step-num.active{background:var(--warn-dim);color:var(--warn);border:1px solid var(--warn)}
+.step-num.pending{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
+.step-info{flex:1}
+.step-name{font-size:13px;font-weight:500;color:var(--text)}
+.step-status{font-size:11px;color:var(--text3)}
+.step-name.active-step{color:var(--warn)}
+.pipeline-main{display:flex;flex-direction:column;gap:20px}
+
+/* ─── HITL PANELS ─── */
+.hitl-panel{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;border-left:3px solid var(--warn)}
+.hitl-title{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.hitl-title h3{font-size:20px;color:var(--text)}
+.hitl-badge{font-size:11px;background:var(--warn-dim);color:var(--warn);border:1px solid rgba(240,192,74,.3);padding:3px 10px;border-radius:20px;font-weight:600}
+.recommendation-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.rec-rank{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:4px}
+.rec-name{font-size:15px;font-weight:500;color:var(--text);margin-bottom:6px;font-family:'DM Mono',monospace}
+.rec-why{font-size:13px;color:var(--text2);line-height:1.6}
+.rec-conf{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--accent);margin-top:6px}
+.conf-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;flex:1;max-width:80px}
+.conf-fill{height:100%;background:var(--accent);border-radius:2px;transition:.3s}
+.hitl-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+
+/* ─── DIAGNOSIS PANEL ─── */
+.diag-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.diag-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.diag-label{font-size:11px;text-transform:uppercase;color:var(--text3);letter-spacing:.5px;margin-bottom:4px}
+.diag-name{font-size:14px;font-weight:500;color:var(--text)}
+.diag-conf{font-size:13px;color:var(--accent);margin-top:4px}
+
+/* ─── CRAG PANEL ─── */
+.verdict-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:8px;font-size:16px;font-family:'DM Serif Display',serif;margin-bottom:16px}
+.verdict-confirmed{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(74,240,168,.3)}
+.verdict-uncertain{background:var(--warn-dim);color:var(--warn);border:1px solid rgba(240,192,74,.3)}
+.verdict-incorrect{background:var(--danger-dim);color:var(--danger);border:1px solid rgba(240,90,74,.3)}
+.evidence-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+.evidence-list li{font-size:13px;padding:8px 12px;background:var(--surface2);border-radius:6px;border-left:2px solid var(--border2)}
+.evidence-list li.for{border-color:var(--accent);color:var(--text)}
+.evidence-list li.against{border-color:var(--danger);color:var(--text2)}
+.section-title{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);font-weight:600;margin-bottom:8px;margin-top:16px}
+.missing-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.missing-category{display:inline-block;font-size:10px;padding:2px 8px;border-radius:4px;background:var(--warn-dim);color:var(--warn);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+.missing-desc{font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px}
+.missing-q{font-size:12px;color:var(--text2);font-style:italic}
+
+/* ─── POLLING ─── */
+.polling-bar{height:2px;background:linear-gradient(90deg,var(--accent),transparent);animation:polling 2s linear infinite}
+@keyframes polling{0%{background-position:0}100%{background-position:200%}}
+.spinner{width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.running-status{display:flex;align-items:center;gap:12px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);color:var(--text2)}
+
+/* ─── REPORT VIEW ─── */
+.report-section{margin-bottom:20px}
+.report-kv{display:grid;grid-template-columns:180px 1fr;gap:4px;font-size:13px;margin-bottom:6px}
+.report-kv .k{color:var(--text2)}
+.report-kv .v{color:var(--text);font-family:'DM Mono',monospace;font-size:12px}
+
+/* ─── EMPTY STATE ─── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-state .icon{font-size:48px;margin-bottom:12px;opacity:.4}
+.empty-state p{font-size:14px}
+
+/* ─── UTILS ─── */
+.hidden{display:none!important}
+.flex{display:flex}
+.items-center{align-items:center}
+.gap-8{gap:8px}
+.gap-12{gap:12px}
+.gap-16{gap:16px}
+.mb-8{margin-bottom:8px}
+.mb-12{margin-bottom:12px}
+.mb-16{margin-bottom:16px}
+.mb-20{margin-bottom:20px}
+.mb-24{margin-bottom:24px}
+.text-sm{font-size:12px}
+.text-muted{color:var(--text2)}
+.text-accent{color:var(--accent)}
+.monospace{font-family:'DM Mono',monospace}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.new-session-fab{position:fixed;bottom:28px;right:28px;background:var(--accent);color:#0a0c0f;border:none;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;padding:14px 24px;border-radius:50px;cursor:pointer;box-shadow:0 4px 20px rgba(74,240,168,.3);transition:.15s;z-index:50}
+.new-session-fab:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(74,240,168,.4)}
+
+/* ─── MODAL ─── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:32px;width:560px;max-width:90vw;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.modal-title{font-size:20px;color:var(--text)}
+.modal-close{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:4px;line-height:1}
+.modal-close:hover{color:var(--text)}
+
+/* ─── TABS ─── */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:24px;gap:0}
+.tab-btn{background:none;border:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:.15s}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-btn:hover:not(.active){color:var(--text)}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:768px){
+  .pipeline-layout{grid-template-columns:1fr}
+  .pipeline-steps{display:none}
+  .diag-row{grid-template-columns:1fr}
+  .main-content{padding:20px 16px}
+  .modal{padding:24px 20px}
+}
+
+/* ─── FADE IN ─── */
+.fade-in{animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════ AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card fade-in">
+    <div class="auth-logo">ClinAI</div>
+    <div class="auth-sub">Clinical Decision Support Platform</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+    <div id="auth-error"></div>
+
+    <!-- Login form -->
+    <div id="login-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="doctor@hospital.com" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()">Login</button>
+    </div>
+
+    <!-- Signup form -->
+    <div id="signup-form" class="hidden">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="su-name" placeholder="Dr. Ahmed Khan"/>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="su-email" placeholder="doctor@hospital.com"/>
+      </div>
+      <div class="form-group">
+        <label>Hospital</label>
+        <input type="text" id="su-hospital" placeholder="Dhaka Medical College"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="su-password" placeholder="Min 8 characters"/>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doSignup()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ MAIN APP -->
+<div id="app" class="hidden">
+  <nav class="topbar">
+    <div class="topbar-logo">ClinAI <span>v1.0</span></div>
+    <div class="topbar-nav">
+      <button onclick="showPage('dashboard')" id="nav-dashboard">Dashboard</button>
+      <button onclick="showPage('sessions')" id="nav-sessions">Sessions</button>
+      <button onclick="showPage('patients')" id="nav-patients">Patients</button>
+    </div>
+    <div class="topbar-right">
+      <div class="doctor-badge" id="doctor-badge">Loading...</div>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </nav>
+  <div class="main-content">
+
+    <!-- ── DASHBOARD ── -->
+    <div id="page-dashboard" class="hidden fade-in">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <p>Welcome back. Here's an overview of your clinical activity.</p>
+      </div>
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card"><div class="stat-label">Total Sessions</div><div class="stat-value" id="stat-sessions">—</div><div class="stat-sub">All time</div></div>
+        <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" id="stat-completed">—</div><div class="stat-sub">Diagnoses confirmed</div></div>
+        <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value" id="stat-active">—</div><div class="stat-sub">Awaiting input</div></div>
+        <div class="stat-card"><div class="stat-label">Patients</div><div class="stat-value" id="stat-patients">—</div><div class="stat-sub">Registered</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Recent Sessions</div>
+          <button class="btn btn-primary btn-sm" onclick="openNewSession()">+ New Session</button>
+        </div>
+        <div id="dashboard-sessions"></div>
+      </div>
+    </div>
+
+    <!-- ── SESSIONS ── -->
+    <div id="page-sessions" class="hidden fade-in">
+      <div class="page-header">
+        <h2>Sessions</h2>
+        <p>All pipeline runs — click any row to open or resume.</p>
+      </div>
+      <div id="sessions-table-wrap"></div>
+      <button class="new-session-fab" onclick="openNewSession()">+ New Session</button>
+    </div>
+
+    <!-- ── PATIENTS ── -->
+    <div id="page-patients" class="hidden fade-in">
+      <div class="page-header">
+        <h2>Patients</h2>
+        <p>Patient registry — click a row to view reports.</p>
+      </div>
+      <div id="patients-table-wrap"></div>
+    </div>
+
+    <!-- ── PIPELINE ── -->
+    <div id="page-pipeline" class="hidden fade-in">
+      <div class="page-header flex items-center gap-12">
+        <button class="btn btn-secondary btn-sm" onclick="showPage('sessions')">← Back</button>
+        <div>
+          <h2>Pipeline <span class="text-muted monospace text-sm" id="pipeline-thread-id"></span></h2>
+          <p id="pipeline-status-text">Loading state…</p>
+        </div>
+      </div>
+      <div class="pipeline-layout">
+        <div class="pipeline-steps" id="pipeline-steps">
+          <!-- steps injected here -->
+        </div>
+        <div class="pipeline-main" id="pipeline-main">
+          <!-- HITL or status injected here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PATIENT DETAIL ── -->
+    <div id="page-patient-detail" class="hidden fade-in">
+      <div class="page-header flex items-center gap-12">
+        <button class="btn btn-secondary btn-sm" onclick="showPage('patients')">← Back</button>
+        <div>
+          <h2 id="patient-detail-name">Patient</h2>
+          <p id="patient-detail-meta"></p>
+        </div>
+      </div>
+      <div id="patient-detail-content"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ NEW SESSION MODAL -->
+<div id="new-session-modal" class="modal-overlay hidden">
+  <div class="modal fade-in">
+    <div class="modal-header">
+      <div class="modal-title">Start New Pipeline</div>
+      <button class="modal-close" onclick="closeNewSession()">×</button>
+    </div>
+    <div id="new-session-error"></div>
+    <div class="form-group">
+      <label>Chief Complaints / History of Present Illness</label>
+      <textarea id="new-chief-complain" placeholder="Paste the full clinical history, chief complaints, general examination, vital signs…" style="min-height:200px"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeNewSession()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitNewSession()">Start Pipeline</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════
+const API = '';  // same origin — FastAPI serves this HTML at /
+let token = localStorage.getItem('clinai_token') || '';
+let doctorId = localStorage.getItem('clinai_doctor_id') || '';
+let currentPipelineThread = null;
+let pollTimer = null;
+
+// ═══════════════════════════════════════════════════════════
+// API HELPERS
+// ═══════════════════════════════════════════════════════════
+async function api(method, path, body=null) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' }
+  };
+  if (token) opts.headers['Authorization'] = `Bearer ${token}`;
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || r.statusText);
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((b,i)=>{
+    b.classList.toggle('active', (tab==='login'&&i===0)||(tab==='signup'&&i===1));
+  });
+  document.getElementById('login-form').classList.toggle('hidden', tab!=='login');
+  document.getElementById('signup-form').classList.toggle('hidden', tab!=='signup');
+  document.getElementById('auth-error').innerHTML = '';
+}
+
+async function doLogin() {
+  clearAlert('auth-error');
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email||!password) return showAlert('auth-error','error','Fill in all fields.');
+  try {
+    const d = await api('POST','/auth/login',{email,password});
+    token = d.access_token; doctorId = d.doctor_id;
+    localStorage.setItem('clinai_token', token);
+    localStorage.setItem('clinai_doctor_id', doctorId);
+    await enterApp();
+  } catch(e) { showAlert('auth-error','error',e.message); }
+}
+
+async function doSignup() {
+  clearAlert('auth-error');
+  const full_name = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const hospital = document.getElementById('su-hospital').value.trim();
+  const password = document.getElementById('su-password').value;
+  if (!full_name||!email||!hospital||!password) return showAlert('auth-error','error','Fill in all fields.');
+  try {
+    await api('POST','/auth/signup',{email,password,full_name,hospital});
+    showAlert('auth-error','success','Account created! Check your email to confirm, then login.');
+    switchAuthTab('login');
+  } catch(e) { showAlert('auth-error','error',e.message); }
+}
+
+function doLogout() {
+  token=''; doctorId='';
+  localStorage.removeItem('clinai_token');
+  localStorage.removeItem('clinai_doctor_id');
+  stopPoll();
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('auth-screen').classList.remove('hidden');
+}
+
+async function enterApp() {
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  try {
+    const me = await api('GET','/auth/me');
+    document.getElementById('doctor-badge').textContent = me.full_name || me.email;
+  } catch(e) {}
+  showPage('dashboard');
+}
+
+// ═══════════════════════════════════════════════════════════
+// PAGES
+// ═══════════════════════════════════════════════════════════
+function showPage(name) {
+  stopPoll();
+  document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('hidden'));
+  document.querySelectorAll('.topbar-nav button').forEach(b=>b.classList.remove('active'));
+  const page = document.getElementById('page-'+name);
+  if(page) page.classList.remove('hidden');
+  const navBtn = document.getElementById('nav-'+name);
+  if(navBtn) navBtn.classList.add('active');
+  if(name==='dashboard') loadDashboard();
+  if(name==='sessions') loadSessions();
+  if(name==='patients') loadPatients();
+}
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════
+async function loadDashboard() {
+  try {
+    const [sessions, patients] = await Promise.all([
+      api('GET','/sessions'), api('GET','/patients')
+    ]);
+    document.getElementById('stat-sessions').textContent = sessions.length;
+    document.getElementById('stat-completed').textContent = sessions.filter(s=>s.status==='completed').length;
+    document.getElementById('stat-active').textContent = sessions.filter(s=>s.status==='paused_hitl'||s.status==='running').length;
+    document.getElementById('stat-patients').textContent = patients.length;
+    document.getElementById('dashboard-sessions').innerHTML = renderSessionsTable(sessions.slice(0,8), true);
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════
+// SESSIONS
+// ═══════════════════════════════════════════════════════════
+async function loadSessions() {
+  document.getElementById('sessions-table-wrap').innerHTML = '<div style="padding:20px;color:var(--text2)">Loading…</div>';
+  try {
+    const sessions = await api('GET','/sessions');
+    document.getElementById('sessions-table-wrap').innerHTML = renderSessionsTable(sessions, true);
+  } catch(e) {
+    document.getElementById('sessions-table-wrap').innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+function renderSessionsTable(sessions, clickable=false) {
+  if(!sessions||!sessions.length) return `<div class="empty-state"><div class="icon">📋</div><p>No sessions yet. Start a new pipeline.</p></div>`;
+  const rows = sessions.map(s => `
+    <tr class="${clickable?'clickable-row':''}" onclick="${clickable?`openPipeline('${s.thread_id}')`:''}">
+      <td class="monospace" style="font-size:11px;color:var(--text3)">${s.thread_id.slice(0,8)}…</td>
+      <td>${s.patients?`${s.patients.name||'—'}, ${s.patients.age||'—'}y`:'—'}</td>
+      <td>${renderStatusBadge(s.status)}</td>
+      <td><span class="text-muted monospace" style="font-size:11px">${s.current_stage||'—'}</span></td>
+      <td class="text-muted" style="font-size:12px">${formatDate(s.created_at)}</td>
+    </tr>`).join('');
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>Thread ID</th><th>Patient</th><th>Status</th><th>Stage</th><th>Created</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// PATIENTS
+// ═══════════════════════════════════════════════════════════
+async function loadPatients() {
+  document.getElementById('patients-table-wrap').innerHTML = '<div style="padding:20px;color:var(--text2)">Loading…</div>';
+  try {
+    const patients = await api('GET','/patients');
+    if(!patients||!patients.length) {
+      document.getElementById('patients-table-wrap').innerHTML = `<div class="empty-state"><div class="icon">👤</div><p>No patients yet.</p></div>`;
+      return;
+    }
+    const rows = patients.map(p=>`
+      <tr class="clickable-row" onclick="openPatientDetail('${p.id}')">
+        <td>${p.name||'<span class="text-muted">Not extracted</span>'}</td>
+        <td>${p.age||'—'}</td>
+        <td>${p.gender||'—'}</td>
+        <td class="text-muted" style="font-size:12px">${p.chief_complain_raw?p.chief_complain_raw.slice(0,60)+'…':'—'}</td>
+        <td class="text-muted" style="font-size:12px">${formatDate(p.created_at)}</td>
+      </tr>`).join('');
+    document.getElementById('patients-table-wrap').innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>Name</th><th>Age</th><th>Gender</th><th>Chief Complaint</th><th>Created</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+  } catch(e) {
+    document.getElementById('patients-table-wrap').innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+async function openPatientDetail(patientId) {
+  document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('page-patient-detail').classList.remove('hidden');
+  document.getElementById('patient-detail-content').innerHTML = '<div style="padding:20px;color:var(--text2)">Loading…</div>';
+  try {
+    const [patient, reports] = await Promise.all([
+      api('GET',`/patients/${patientId}`),
+      api('GET',`/patients/${patientId}/reports`)
+    ]);
+    document.getElementById('patient-detail-name').textContent = patient.name || 'Unknown Patient';
+    document.getElementById('patient-detail-meta').textContent = `${patient.age||'?'}y ${patient.gender||''} • ${patient.hospital||''}`;
+    document.getElementById('patient-detail-content').innerHTML = renderPatientDetail(patient, reports);
+  } catch(e) {
+    document.getElementById('patient-detail-content').innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+function renderPatientDetail(p, reports) {
+  const demo = `
+    <div class="card mb-20">
+      <div class="card-header"><div class="card-title">Demographics</div></div>
+      <div class="report-kv"><span class="k">Name</span><span class="v">${p.name||'—'}</span></div>
+      <div class="report-kv"><span class="k">Age</span><span class="v">${p.age||'—'}</span></div>
+      <div class="report-kv"><span class="k">Gender</span><span class="v">${p.gender||'—'}</span></div>
+      <div class="report-kv"><span class="k">Contact</span><span class="v">${p.contact_number||'—'}</span></div>
+      <div class="report-kv"><span class="k">Address</span><span class="v">${p.address||'—'}</span></div>
+      <div class="report-kv"><span class="k">Admission</span><span class="v">${p.admission_datetime?formatDate(p.admission_datetime):'—'}</span></div>
+    </div>`;
+  const reps = reports.length ? reports.map(r=>`
+    <div class="card mb-16">
+      <div class="card-header">
+        <div class="card-title">${r.final_diagnosis}</div>
+        ${renderVerdictBadge(r.verdict)}
+      </div>
+      <div class="report-kv"><span class="k">Confidence</span><span class="v">${Math.round(r.final_diagnosis_confidence*100)}%</span></div>
+      <div class="report-kv"><span class="k">Validated Dx</span><span class="v">${r.validated_primary_diagnosis||'—'}</span></div>
+      ${r.corrected_diagnosis?`<div class="report-kv"><span class="k">Corrected Dx</span><span class="v">${r.corrected_diagnosis}</span></div>`:''}
+      <div class="report-kv"><span class="k">CRAG Attempts</span><span class="v">${r.total_crag_attempts}</span></div>
+      <div class="report-kv"><span class="k">Doctor Confirmed</span><span class="v">${r.doctor_confirmed?'Yes':'No'}</span></div>
+      ${r.doctor_final_note?`<div class="report-kv"><span class="k">Doctor Note</span><span class="v">${r.doctor_final_note}</span></div>`:''}
+      <div class="section-title" style="margin-top:12px">Clinical Reasoning</div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7">${r.clinical_reasoning_summary||'—'}</p>
+      ${r.supporting_evidence&&r.supporting_evidence.length?`
+        <div class="section-title">Supporting Evidence</div>
+        <ul class="evidence-list">${r.supporting_evidence.map(e=>`<li class="for">✓ ${e}</li>`).join('')}</ul>`:'' }
+      ${r.against_evidence&&r.against_evidence.length?`
+        <div class="section-title">Against Evidence</div>
+        <ul class="evidence-list">${r.against_evidence.map(e=>`<li class="against">✗ ${e}</li>`).join('')}</ul>`:''}
+      ${r.red_flags&&r.red_flags.length?`
+        <div class="section-title">⚠ Red Flags</div>
+        <ul class="evidence-list">${r.red_flags.map(f=>`<li>⚠ ${f}</li>`).join('')}</ul>`:''}
+      <div style="font-size:11px;color:var(--text3);margin-top:12px">${formatDate(r.created_at)}</div>
+    </div>`).join('') :
+    `<div class="empty-state"><div class="icon">📄</div><p>No final reports yet.</p></div>`;
+  return demo + `<div class="section-title mb-12">Final Reports</div>` + reps;
+}
+
+// ═══════════════════════════════════════════════════════════
+// NEW SESSION MODAL
+// ═══════════════════════════════════════════════════════════
+function openNewSession() {
+  document.getElementById('new-session-modal').classList.remove('hidden');
+  document.getElementById('new-chief-complain').value='';
+  clearAlert('new-session-error');
+}
+function closeNewSession() {
+  document.getElementById('new-session-modal').classList.add('hidden');
+}
+
+async function submitNewSession() {
+  clearAlert('new-session-error');
+  const cc = document.getElementById('new-chief-complain').value.trim();
+  if(!cc) return showAlert('new-session-error','error','Please enter chief complaints.');
+  const btn = document.querySelector('#new-session-modal .btn-primary');
+  btn.disabled=true; btn.textContent='Starting…';
+  try {
+    const d = await api('POST','/pipeline/start',{chief_complain:cc});
+    closeNewSession();
+    openPipeline(d.thread_id);
+  } catch(e) {
+    showAlert('new-session-error','error',e.message);
+  } finally { btn.disabled=false; btn.textContent='Start Pipeline'; }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PIPELINE
+// ═══════════════════════════════════════════════════════════
+const STEPS = [
+  {id:'stage_1a',           label:'Stage 1A',          sub:'Patient extraction'},
+  {id:'stage_1b',           label:'Stage 1B',          sub:'Exam recommendation'},
+  {id:'hitl_1',             label:'HITL #1',           sub:'Approve recommendation'},
+  {id:'hitl_2',             label:'HITL #2',           sub:'Enter exam findings'},
+  {id:'stage_1c',           label:'Stage 1C',          sub:'Structure + Diagnosis'},
+  {id:'hitl_3',             label:'HITL #3',           sub:'Approve diagnosis'},
+  {id:'rag',                label:'RAG',               sub:'Knowledge retrieval'},
+  {id:'crag',               label:'CRAG',              sub:'Validation'},
+  {id:'hitl_3b',            label:'HITL #3b',          sub:'Provide missing data'},
+  {id:'hitl_4',             label:'HITL #4',           sub:'Confirm final diagnosis'},
+];
+
+const HITL_TO_STEP = {
+  'hitl_1_recommendation_approval': 'hitl_1',
+  'hitl_2_exam_input':              'hitl_2',
+  'hitl_3_diagnosis_approval':      'hitl_3',
+  'hitl_3b_crag_missing_data':      'hitl_3b',
+  'hitl_4_crag_confirmation':       'hitl_4',
+};
+
+function openPipeline(threadId) {
+  currentPipelineThread = threadId;
+  document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('page-pipeline').classList.remove('hidden');
+  document.getElementById('pipeline-thread-id').textContent = threadId.slice(0,8)+'…';
+  renderPipelineSteps(null);
+  loadPipelineState();
+}
+
+function renderPipelineSteps(activeStepId) {
+  const done = getDoneSteps(activeStepId);
+  document.getElementById('pipeline-steps').innerHTML = STEPS.map(s => {
+    const isDone = done.includes(s.id);
+    const isActive = s.id === activeStepId;
+    const cls = isDone?'done':isActive?'active':'pending';
+    const icon = isDone?'✓':isActive?'▶':'○';
+    return `<div class="pipeline-step">
+      <div class="step-num ${cls}">${icon}</div>
+      <div class="step-info">
+        <div class="step-name ${isActive?'active-step':''}">${s.label}</div>
+        <div class="step-status">${s.sub}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getDoneSteps(activeId) {
+  const order = STEPS.map(s=>s.id);
+  const idx = order.indexOf(activeId);
+  return idx < 0 ? order : order.slice(0, idx);
+}
+
+async function loadPipelineState() {
+  stopPoll();
+  try {
+    const state = await api('GET', `/pipeline/state/${currentPipelineThread}`);
+    renderPipelineState(state);
+    // If running (no HITL yet), poll
+    if (state.status === 'paused' && !state.paused_at) {
+      startPoll();
+    } else if (state.status !== 'complete' && state.status !== 'not_found' && !state.paused_at) {
+      startPoll();
+    }
+  } catch(e) {
+    document.getElementById('pipeline-main').innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+function startPoll() {
+  pollTimer = setTimeout(async () => {
+    await loadPipelineState();
+  }, 3000);
+}
+
+function stopPoll() {
+  if(pollTimer) { clearTimeout(pollTimer); pollTimer=null; }
+}
+
+function renderPipelineState(state) {
+  const main = document.getElementById('pipeline-main');
+  const statusEl = document.getElementById('pipeline-status-text');
+
+  if(state.status === 'not_found' || !state.values) {
+    main.innerHTML = `<div class="running-status"><div class="spinner"></div><span>Pipeline is initializing, please wait…</span></div>`;
+    statusEl.textContent = 'Starting pipeline…';
+    renderPipelineSteps('stage_1a');
+    startPoll();
+    return;
+  }
+
+  if(state.status === 'complete') {
+    const crag = state.values.crag_output;
+    renderPipelineSteps(null);
+    statusEl.textContent = 'Pipeline complete ✓';
+    main.innerHTML = `
+      <div class="hitl-panel" style="border-left-color:var(--accent)">
+        <div class="hitl-title"><h3>Pipeline Complete</h3><span class="badge badge-green">✓ Done</span></div>
+        ${crag ? `
+          <div class="verdict-badge verdict-${crag.verdict}">${crag.verdict.toUpperCase()}</div>
+          <div class="report-kv"><span class="k">Final Diagnosis</span><span class="v">${crag.final_diagnosis}</span></div>
+          <div class="report-kv"><span class="k">Confidence</span><span class="v">${Math.round(crag.final_diagnosis_confidence*100)}%</span></div>
+          <div class="section-title">Clinical Reasoning</div>
+          <p style="font-size:13px;color:var(--text2);line-height:1.7">${crag.clinical_reasoning_summary||'—'}</p>
+        ` : '<p class="text-muted">Final state saved. View the patient report for full details.</p>'}
+      </div>`;
+    return;
+  }
+
+  if(!state.paused_at) {
+    // Running — not yet at a HITL
+    const stage = (state.next||[]).join(', ') || 'processing';
+    renderPipelineSteps(null);
+    statusEl.textContent = `Running: ${stage}`;
+    main.innerHTML = `<div class="running-status"><div class="spinner"></div><span>Pipeline is running… <span class="text-muted">(${stage})</span></span><div class="polling-bar" style="height:2px;width:100%;margin-top:8px"></div></div>`;
+    startPoll();
+    return;
+  }
+
+  const paused = state.paused_at;
+  const stepId = HITL_TO_STEP[paused] || null;
+  renderPipelineSteps(stepId);
+  statusEl.textContent = `Awaiting: ${paused}`;
+  const v = state.values;
+
+  if(paused === 'hitl_1_recommendation_approval') {
+    main.innerHTML = renderHITL1(v.exam_recommendation);
+  } else if(paused === 'hitl_2_exam_input') {
+    main.innerHTML = renderHITL2(v.exam_recommendation, v.doctor_approved_recommendation, v.doctor_modified_recommendation);
+  } else if(paused === 'hitl_3_diagnosis_approval') {
+    main.innerHTML = renderHITL3(v.provisional_diagnosis);
+  } else if(paused === 'hitl_3b_crag_missing_data') {
+    main.innerHTML = renderHITL3b(v.crag_output, v.crag_missing_data, v.crag_attempt);
+  } else if(paused === 'hitl_4_crag_confirmation') {
+    main.innerHTML = renderHITL4(v.crag_output, v.crag_history);
+  }
+}
+
+// ─── HITL 1: Recommendation Approval ───
+function renderHITL1(rec) {
+  if(!rec) return '<div class="alert alert-warn">Awaiting exam recommendation…</div>';
+  const primary = rec.primary_recommendation || {};
+  const alt1    = rec.alternative_1 || {};
+  const alt2    = rec.alternative_2 || {};
+  return `
+    <div class="hitl-panel">
+      <div class="hitl-title"><h3>Exam Recommendation</h3><span class="hitl-badge">HITL #1</span></div>
+      <p class="text-muted mb-16" style="font-size:13px">${rec.clinical_summary||''}</p>
+      ${renderRecCard('Primary Recommendation', primary)}
+      ${renderRecCard('Alternative 1', alt1)}
+      ${renderRecCard('Alternative 2', alt2)}
+      <div class="divider"></div>
+      <div class="hitl-actions">
+        <button class="btn btn-primary" onclick="submitHITL1(true)">✓ Approve &amp; Proceed</button>
+      </div>
+      <div class="form-group mb-0" style="margin-top:16px">
+        <label>Or type a modified recommendation</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="hitl1-modified" placeholder="e.g. RS + CVS" style="flex:1"/>
+          <button class="btn btn-warn" onclick="submitHITL1(false)">Use Modified</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderRecCard(rank, rec) {
+  if(!rec||!rec.exam_types) return '';
+  const conf = rec.confidence_score||0;
+  return `<div class="recommendation-card">
+    <div class="rec-rank">${rank}</div>
+    <div class="rec-name">${Array.isArray(rec.exam_types)?rec.exam_types.join(', '):rec.exam_types}</div>
+    <div class="rec-why">${rec.why_recommended||''}</div>
+    <div class="rec-conf">
+      <span>${Math.round(conf*100)}%</span>
+      <div class="conf-bar"><div class="conf-fill" style="width:${conf*100}%"></div></div>
+    </div>
+  </div>`;
+}
+
+async function submitHITL1(approved) {
+  const modified = document.getElementById('hitl1-modified')?.value.trim()||'';
+  if(!approved && !modified) return alert('Please type a modified recommendation.');
+  await resumePipeline('hitl_1_recommendation_approval', {approved, modified_recommendation: modified});
+}
+
+// ─── HITL 2: Exam Input ───
+function renderHITL2(rec, approved, modified) {
+  const examTypes = modified || (rec?.primary_recommendation?.exam_types)||['RS'];
+  return `
+    <div class="hitl-panel">
+      <div class="hitl-title"><h3>Systemic Examination Input</h3><span class="hitl-badge">HITL #2</span></div>
+      <p class="text-muted mb-16" style="font-size:13px">Recommended systems: <strong style="color:var(--accent)">${Array.isArray(examTypes)?examTypes.join(', '):examTypes}</strong></p>
+      <div class="alert alert-info">Include: Inspection, Palpation, Percussion, Auscultation for each system.</div>
+      <div class="form-group">
+        <label>Systemic Examination Findings</label>
+        <textarea id="hitl2-exam" placeholder="Enter full examination findings here…" style="min-height:240px"></textarea>
+      </div>
+      <div class="hitl-actions">
+        <button class="btn btn-primary" onclick="submitHITL2()">Submit Findings</button>
+      </div>
+    </div>`;
+}
+
+async function submitHITL2() {
+  const exam_text = document.getElementById('hitl2-exam')?.value.trim()||'';
+  if(!exam_text) return alert('Please enter examination findings.');
+  await resumePipeline('hitl_2_exam_input', {exam_text});
+}
+
+// ─── HITL 3: Diagnosis Approval ───
+function renderHITL3(diag) {
+  if(!diag) return '<div class="alert alert-warn">Awaiting provisional diagnosis…</div>';
+  return `
+    <div class="hitl-panel">
+      <div class="hitl-title"><h3>Provisional Diagnosis</h3><span class="hitl-badge">HITL #3</span></div>
+      <div class="diag-row">
+        <div class="diag-card">
+          <div class="diag-label">Primary Diagnosis</div>
+          <div class="diag-name">${diag.primary_diagnosis||'—'}</div>
+          <div class="diag-conf">${Math.round((diag.primary_diagnosis_confidence||0)*100)}% confidence</div>
+        </div>
+        <div class="diag-card">
+          <div class="diag-label">Alternative 1</div>
+          <div class="diag-name">${diag.alternative_diagnosis_1||'—'}</div>
+          <div class="diag-conf">${Math.round((diag.alternative_diagnosis_1_confidence||0)*100)}% confidence</div>
+        </div>
+      </div>
+      <div class="diag-row">
+        <div class="diag-card">
+          <div class="diag-label">Alternative 2</div>
+          <div class="diag-name">${diag.alternative_diagnosis_2||'—'}</div>
+          <div class="diag-conf">${Math.round((diag.alternative_diagnosis_2_confidence||0)*100)}% confidence</div>
+        </div>
+        <div class="diag-card" style="${diag.safety_concerns?.length?'border-color:rgba(240,90,74,.3)':''}">
+          <div class="diag-label">Safety Concerns</div>
+          <div class="diag-name" style="font-size:13px;color:var(--danger)">${diag.safety_concerns?.join(', ')||'None'}</div>
+        </div>
+      </div>
+      <p class="text-muted mb-16" style="font-size:13px">${diag.clinical_summary||''}</p>
+      <div class="form-group">
+        <label>Optional: Add a note or correction</label>
+        <input type="text" id="hitl3-note" placeholder="Leave blank to approve as-is"/>
+      </div>
+      <div class="hitl-actions">
+        <button class="btn btn-primary" onclick="submitHITL3(true)">✓ Approve — Run RAG + CRAG</button>
+        <button class="btn btn-warn" onclick="submitHITL3(false)">Add Note &amp; Proceed</button>
+      </div>
+    </div>`;
+}
+
+async function submitHITL3(approved) {
+  const doctor_note = document.getElementById('hitl3-note')?.value.trim()||'';
+  await resumePipeline('hitl_3_diagnosis_approval', {approved, doctor_note});
+}
+
+// ─── HITL 3b: CRAG Missing Data ───
+function renderHITL3b(crag, missing, attempt) {
+  if(!crag) return '<div class="alert alert-warn">Awaiting CRAG output…</div>';
+  const missingHtml = missing?.map(m=>`
+    <div class="missing-item">
+      <span class="missing-category">${m.category||'data'}</span>
+      <div class="missing-desc">${m.description||''}</div>
+      <div class="missing-q">❓ ${m.question_for_doctor||''}</div>
+    </div>`).join('')||'<p class="text-muted">General confidence too low — provide more clinical detail.</p>';
+  return `
+    <div class="hitl-panel">
+      <div class="hitl-title"><h3>Additional Data Needed</h3><span class="hitl-badge">HITL #3b — Attempt ${attempt||1}/${3}</span></div>
+      <div style="display:flex;gap:16px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+        <div class="verdict-badge verdict-${crag.verdict}">${crag.verdict?.toUpperCase()||'UNCERTAIN'}</div>
+        <span class="text-muted" style="font-size:13px">Confidence: <strong>${Math.round((crag.confidence_score||0)*100)}%</strong> (threshold: 90%)</span>
+        <span class="text-muted" style="font-size:13px">Current: <strong>${crag.final_diagnosis||'—'}</strong></span>
+      </div>
+      <div class="section-title">Missing Data Items</div>
+      ${missingHtml}
+      <div class="form-group" style="margin-top:16px">
+        <label>Your Response (clinical data / test results)</label>
+        <textarea id="hitl3b-data" placeholder="Provide the missing clinical data, test results, or additional history…" style="min-height:160px"></textarea>
+      </div>
+      <div class="hitl-actions">
+        <button class="btn btn-primary" onclick="submitHITL3b()">Submit &amp; Retry CRAG</button>
+      </div>
+    </div>`;
+}
+
+async function submitHITL3b() {
+  const additional_data = document.getElementById('hitl3b-data')?.value.trim()||'';
+  if(!additional_data) return alert('Please provide the missing data.');
+  await resumePipeline('hitl_3b_crag_missing_data', {additional_data});
+}
+
+// ─── HITL 4: Final Confirmation ───
+function renderHITL4(crag, history) {
+  if(!crag) return '<div class="alert alert-warn">Awaiting CRAG validation result…</div>';
+  const attempts = history?.length||1;
+  const supportHtml = crag.supporting_evidence?.map(e=>`<li class="for">✓ ${e}</li>`).join('')||'<li>None listed</li>';
+  const againstHtml = crag.against_evidence?.map(e=>`<li class="against">✗ ${e}</li>`).join('')||'<li>None listed</li>';
+  const redFlags = crag.red_flags?.length ? `
+    <div class="section-title">⚠ Red Flags</div>
+    <ul class="evidence-list">${crag.red_flags.map(f=>`<li style="border-color:var(--danger)">⚠ ${f}</li>`).join('')}</ul>` : '';
+  const tests = crag.required_tests?.length ? `
+    <div class="section-title">Required Tests</div>
+    ${crag.required_tests.map(t=>`
+      <div class="missing-item">
+        <span class="missing-category" style="background:var(--info-dim);color:var(--info)">${t.priority}</span>
+        <div class="missing-desc">${t.test_name}</div>
+        <div class="missing-q">${t.reason} — Expected: ${t.expected_finding}</div>
+      </div>`).join('')}` : '';
+  return `
+    <div class="hitl-panel" style="border-left-color:var(--accent)">
+      <div class="hitl-title">
+        <h3>Final CRAG Result</h3>
+        <span class="hitl-badge" style="background:var(--accent-dim);color:var(--accent);border-color:rgba(74,240,168,.3)">HITL #4 ${attempts>1?`— ${attempts} attempts`:''}</span>
+      </div>
+      <div class="verdict-badge verdict-${crag.verdict}">${crag.verdict?.toUpperCase()||'—'}</div>
+      <div class="report-kv"><span class="k">Provisional Dx</span><span class="v">${crag.validated_primary_diagnosis||'—'}</span></div>
+      ${crag.corrected_diagnosis?`<div class="report-kv"><span class="k">Corrected Dx</span><span class="v">${crag.corrected_diagnosis}</span></div>`:''}
+      <div class="report-kv"><span class="k">Final Diagnosis</span><span class="v" style="color:var(--accent);font-size:14px">${crag.final_diagnosis||'—'}</span></div>
+      <div class="report-kv"><span class="k">Confidence</span><span class="v">${Math.round((crag.final_diagnosis_confidence||0)*100)}%</span></div>
+      <div class="section-title">Clinical Reasoning</div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px">${crag.clinical_reasoning_summary||'—'}</p>
+      <div class="section-title">Supporting Evidence</div>
+      <ul class="evidence-list mb-12">${supportHtml}</ul>
+      <div class="section-title">Against Evidence</div>
+      <ul class="evidence-list mb-12">${againstHtml}</ul>
+      ${tests}${redFlags}
+      <div class="divider"></div>
+      <div class="form-group">
+        <label>Optional: Final note or override</label>
+        <input type="text" id="hitl4-note" placeholder="Leave blank to confirm as-is"/>
+      </div>
+      <div class="hitl-actions">
+        <button class="btn btn-primary" onclick="submitHITL4(true)">✓ Confirm Final Diagnosis</button>
+        <button class="btn btn-warn" onclick="submitHITL4(false)">Add Note &amp; Confirm</button>
+      </div>
+    </div>`;
+}
+
+async function submitHITL4(confirmed) {
+  const doctor_final_note = document.getElementById('hitl4-note')?.value.trim()||'';
+  await resumePipeline('hitl_4_crag_confirmation', {confirmed, doctor_final_note});
+}
+
+// ─── Generic resume ───
+async function resumePipeline(resume_type, payload) {
+  const btn = event?.target;
+  if(btn) { btn.disabled=true; btn.textContent='Submitting…'; }
+  try {
+    await api('POST', `/pipeline/resume/${currentPipelineThread}`, {resume_type, payload});
+    // Show running state while celery picks it up
+    document.getElementById('pipeline-main').innerHTML = `<div class="running-status"><div class="spinner"></div><span>Submitted. Pipeline resuming…</span></div>`;
+    document.getElementById('pipeline-status-text').textContent = 'Running…';
+    setTimeout(()=>loadPipelineState(), 2500);
+  } catch(e) {
+    if(btn) { btn.disabled=false; btn.textContent=btn.textContent.replace('Submitting…','Submit'); }
+    document.getElementById('pipeline-main').insertAdjacentHTML('afterbegin', `<div class="alert alert-error">${e.message}</div>`);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+function renderStatusBadge(status) {
+  const map = {
+    starting:    ['badge-gray',   '○ Starting'],
+    running:     ['badge-blue',   '▶ Running'],
+    paused_hitl: ['badge-yellow', '⏸ Awaiting Input'],
+    completed:   ['badge-green',  '✓ Completed'],
+    failed:      ['badge-red',    '✗ Failed'],
+  };
+  const [cls, label] = map[status]||['badge-gray',status];
+  return `<span class="badge ${cls}"><span class="dot"></span>${label}</span>`;
+}
+
+function renderVerdictBadge(verdict) {
+  const map = {confirmed:'badge-green',uncertain:'badge-yellow',incorrect:'badge-red'};
+  return `<span class="badge ${map[verdict]||'badge-gray'}">${verdict?.toUpperCase()||'—'}</span>`;
+}
+
+function formatDate(d) {
+  if(!d) return '—';
+  try { return new Date(d).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+  catch{return d;}
+}
+
+function showAlert(containerId, type, msg) {
+  const el = document.getElementById(containerId);
+  if(el) el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+}
+function clearAlert(containerId) {
+  const el = document.getElementById(containerId);
+  if(el) el.innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+(async()=>{
+  if(token) {
+    try {
+      await api('GET','/auth/me');
+      await enterApp();
+    } catch(e) { token=''; localStorage.removeItem('clinai_token'); }
+  }
+})();
+</script>
+</body>
+</html>
